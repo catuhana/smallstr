@@ -450,7 +450,7 @@ impl<A: Array<Item = u8>> SmallString<A> {
 impl<const N: usize> SmallString<[u8; N]> {
     /// Construct an empty string.
     #[inline]
-    pub const fn const_new() -> Self {
+    pub const fn new_const() -> Self {
         Self {
             data: SmallVec::new_const(),
         }
