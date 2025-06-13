@@ -446,6 +446,24 @@ impl<A: Array<Item = u8>> SmallString<A> {
     }
 }
 
+#[cfg(feature = "const_new")]
+impl<const N: usize> SmallString<[u8; N]> {
+    /// Construct an empty string.
+    #[inline]
+    pub const fn const_new() -> Self {
+        Self {
+            data: SmallVec::new_const(),
+        }
+    }
+
+    /// Construct an empty string from a constant byte array.
+    pub const fn from_const(items: [u8; N]) -> Self {
+        SmallString {
+            data: SmallVec::from_const(items),
+        }
+    }
+}
+
 impl<A: Array<Item = u8>> ops::Deref for SmallString<A> {
     type Target = str;
 

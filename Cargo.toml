@@ -16,6 +16,9 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
+default = ["const_new"]
+
+const_new = ["smallvec/const_new"]
 ffi = []
 std = ["serde/std"]
 union = ["smallvec/union"]
