@@ -2,7 +2,7 @@
 name = "smallstr"
 version = "0.3.0"
 authors = ["Murarth <murarth@gmail.com>"]
-edition = "2018"
+edition = "2024"
 
 description = "String-like container based on smallvec"
 

@@ -34,8 +34,8 @@ pub struct SmallString<A: Array<Item = u8>> {
 impl<A: Array<Item = u8>> SmallString<A> {
     /// Construct an empty string.
     #[inline]
-    pub fn new() -> SmallString<A> {
-        SmallString {
+    pub fn new() -> Self {
+        Self {
             data: SmallVec::new(),
         }
     }
@@ -45,24 +45,24 @@ impl<A: Array<Item = u8>> SmallString<A> {
     ///
     /// Will create a heap allocation only if `n` is larger than the inline capacity.
     #[inline]
-    pub fn with_capacity(n: usize) -> SmallString<A> {
-        SmallString {
+    pub fn with_capacity(n: usize) -> Self {
+        Self {
             data: SmallVec::with_capacity(n),
         }
     }
 
     /// Construct a `SmallString` by copying data from a `&str`.
     #[inline]
-    pub fn from_str(s: &str) -> SmallString<A> {
-        SmallString {
+    pub fn from_str(s: &str) -> Self {
+        Self {
             data: SmallVec::from_slice(s.as_bytes()),
         }
     }
 
     /// Construct a `SmallString` by using an existing allocation.
     #[inline]
-    pub fn from_string(s: String) -> SmallString<A> {
-        SmallString {
+    pub fn from_string(s: String) -> Self {
+        Self {
             data: SmallVec::from_vec(s.into_bytes()),
         }
     }
@@ -71,11 +71,11 @@ impl<A: Array<Item = u8>> SmallString<A> {
     ///
     /// If the provided byte array is not valid UTF-8, an error is returned.
     #[inline]
-    pub fn from_buf(buf: A) -> Result<SmallString<A>, FromUtf8Error<A>> {
+    pub fn from_buf(buf: A) -> Result<Self, FromUtf8Error<A>> {
         let data = SmallVec::from_buf(buf);
 
         match str::from_utf8(&data) {
-            Ok(_) => Ok(SmallString { data }),
+            Ok(_) => Ok(Self { data }),
             Err(error) => {
                 let buf = data.into_inner().ok().unwrap();
 
@@ -94,8 +94,8 @@ impl<A: Array<Item = u8>> SmallString<A> {
     /// memory unsafety issues, as the Rust standard library functions assume
     /// that `&str`s are valid UTF-8.
     #[inline]
-    pub unsafe fn from_buf_unchecked(buf: A) -> SmallString<A> {
-        SmallString {
+    pub unsafe fn from_buf_unchecked(buf: A) -> Self {
+        Self {
             data: SmallVec::from_buf(buf),
         }
     }
@@ -275,10 +275,10 @@ impl<A: Array<Item = u8>> SmallString<A> {
     /// If `idx` does not lie on a `char` boundary.
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
-        };
+        let ch = self[idx..].chars().next().map_or_else(
+            || panic!("cannot remove a char from the end of a string"),
+            |ch| ch,
+        );
 
         let ch_len = ch.len_utf8();
         let next = idx + ch_len;
@@ -345,7 +345,7 @@ impl<A: Array<Item = u8>> SmallString<A> {
     /// memory unsafety issues, as the Rust standard library functions assume
     /// that `&str`s are valid UTF-8.
     #[inline]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut SmallVec<A> {
+    pub const unsafe fn as_mut_vec(&mut self) -> &mut SmallVec<A> {
         &mut self.data
     }
 
@@ -372,7 +372,7 @@ impl<A: Array<Item = u8>> SmallString<A> {
     /// (and the elements have been spilled to the heap).
     #[inline]
     pub fn into_inner(self) -> Result<A, Self> {
-        self.data.into_inner().map_err(|data| SmallString { data })
+        self.data.into_inner().map_err(|data| Self { data })
     }
 
     /// Retains only the characters specified by the predicate.
@@ -400,7 +400,7 @@ impl<A: Array<Item = u8>> SmallString<A> {
             del_bytes: usize,
         }
 
-        impl<'a, A: Array<Item = u8>> Drop for SetLenOnDrop<'a, A> {
+        impl<A: Array<Item = u8>> Drop for SetLenOnDrop<'_, A> {
             fn drop(&mut self) {
                 let new_len = self.idx - self.del_bytes;
                 debug_assert!(new_len <= self.s.len());
@@ -443,10 +443,6 @@ impl<A: Array<Item = u8>> SmallString<A> {
         }
 
         drop(guard);
-    }
-
-    fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.as_ptr() as *mut u8
     }
 }
 
@@ -557,29 +553,29 @@ impl<'de, A: Array<Item = u8>> Visitor<'de> for SmallStringVisitor<A> {
 
 impl<A: Array<Item = u8>> From<char> for SmallString<A> {
     #[inline]
-    fn from(ch: char) -> SmallString<A> {
-        SmallString::from_str(ch.encode_utf8(&mut [0; 4]))
+    fn from(ch: char) -> Self {
+        Self::from_str(ch.encode_utf8(&mut [0; 4]))
     }
 }
 
-impl<'a, A: Array<Item = u8>> From<&'a str> for SmallString<A> {
+impl<A: Array<Item = u8>> From<&str> for SmallString<A> {
     #[inline]
-    fn from(s: &str) -> SmallString<A> {
-        SmallString::from_str(s)
+    fn from(s: &str) -> Self {
+        Self::from_str(s)
     }
 }
 
 impl<A: Array<Item = u8>> From<Box<str>> for SmallString<A> {
     #[inline]
-    fn from(s: Box<str>) -> SmallString<A> {
-        SmallString::from_string(s.into())
+    fn from(s: Box<str>) -> Self {
+        Self::from_string(s.into())
     }
 }
 
 impl<A: Array<Item = u8>> From<String> for SmallString<A> {
     #[inline]
-    fn from(s: String) -> SmallString<A> {
-        SmallString::from_string(s)
+    fn from(s: String) -> Self {
+        Self::from_string(s)
     }
 }
 
@@ -618,40 +614,40 @@ impl_index_str!(ops::RangeTo<usize>);
 impl_index_str!(ops::RangeFull);
 
 impl<A: Array<Item = u8>> FromIterator<char> for SmallString<A> {
-    fn from_iter<I: IntoIterator<Item = char>>(iter: I) -> SmallString<A> {
-        let mut s = SmallString::new();
+    fn from_iter<I: IntoIterator<Item = char>>(iter: I) -> Self {
+        let mut s = Self::new();
         s.extend(iter);
         s
     }
 }
 
 impl<'a, A: Array<Item = u8>> FromIterator<&'a char> for SmallString<A> {
-    fn from_iter<I: IntoIterator<Item = &'a char>>(iter: I) -> SmallString<A> {
-        let mut s = SmallString::new();
-        s.extend(iter.into_iter().cloned());
+    fn from_iter<I: IntoIterator<Item = &'a char>>(iter: I) -> Self {
+        let mut s = Self::new();
+        s.extend(iter.into_iter().copied());
         s
     }
 }
 
 impl<'a, A: Array<Item = u8>> FromIterator<Cow<'a, str>> for SmallString<A> {
-    fn from_iter<I: IntoIterator<Item = Cow<'a, str>>>(iter: I) -> SmallString<A> {
-        let mut s = SmallString::new();
+    fn from_iter<I: IntoIterator<Item = Cow<'a, str>>>(iter: I) -> Self {
+        let mut s = Self::new();
         s.extend(iter);
         s
     }
 }
 
 impl<'a, A: Array<Item = u8>> FromIterator<&'a str> for SmallString<A> {
-    fn from_iter<I: IntoIterator<Item = &'a str>>(iter: I) -> SmallString<A> {
-        let mut s = SmallString::new();
+    fn from_iter<I: IntoIterator<Item = &'a str>>(iter: I) -> Self {
+        let mut s = Self::new();
         s.extend(iter);
         s
     }
 }
 
 impl<A: Array<Item = u8>> FromIterator<String> for SmallString<A> {
-    fn from_iter<I: IntoIterator<Item = String>>(iter: I) -> SmallString<A> {
-        let mut s = SmallString::new();
+    fn from_iter<I: IntoIterator<Item = String>>(iter: I) -> Self {
+        let mut s = Self::new();
         s.extend(iter);
         s
     }
@@ -672,7 +668,7 @@ impl<A: Array<Item = u8>> Extend<char> for SmallString<A> {
 
 impl<'a, A: Array<Item = u8>> Extend<&'a char> for SmallString<A> {
     fn extend<I: IntoIterator<Item = &'a char>>(&mut self, iter: I) {
-        self.extend(iter.into_iter().cloned());
+        self.extend(iter.into_iter().copied());
     }
 }
 
@@ -720,11 +716,6 @@ macro_rules! eq_str {
             #[inline]
             fn eq(&self, rhs: &$rhs) -> bool {
                 &self[..] == &rhs[..]
-            }
-
-            #[inline]
-            fn ne(&self, rhs: &$rhs) -> bool {
-                &self[..] != &rhs[..]
             }
         }
     };
@@ -794,12 +785,7 @@ where
 {
     #[inline]
     fn eq(&self, rhs: &SmallString<B>) -> bool {
-        &self[..] == &rhs[..]
-    }
-
-    #[inline]
-    fn ne(&self, rhs: &SmallString<B>) -> bool {
-        &self[..] != &rhs[..]
+        self[..] == rhs[..]
     }
 }
 
@@ -807,14 +793,14 @@ impl<A: Array<Item = u8>> Eq for SmallString<A> {}
 
 impl<A: Array<Item = u8>> PartialOrd for SmallString<A> {
     #[inline]
-    fn partial_cmp(&self, rhs: &SmallString<A>) -> Option<Ordering> {
-        self[..].partial_cmp(&rhs[..])
+    fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
+        Some(self.cmp(rhs))
     }
 }
 
 impl<A: Array<Item = u8>> Ord for SmallString<A> {
     #[inline]
-    fn cmp(&self, rhs: &SmallString<A>) -> Ordering {
+    fn cmp(&self, rhs: &Self) -> Ordering {
         self[..].cmp(&rhs[..])
     }
 }
@@ -822,7 +808,7 @@ impl<A: Array<Item = u8>> Ord for SmallString<A> {
 impl<A: Array<Item = u8>> Hash for SmallString<A> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self[..].hash(state)
+        self[..].hash(state);
     }
 }
 
@@ -836,7 +822,7 @@ pub struct Drain<'a> {
     iter: Chars<'a>,
 }
 
-impl<'a> Iterator for Drain<'a> {
+impl Iterator for Drain<'_> {
     type Item = char;
 
     #[inline]
@@ -850,7 +836,7 @@ impl<'a> Iterator for Drain<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for Drain<'a> {
+impl DoubleEndedIterator for Drain<'_> {
     #[inline]
     fn next_back(&mut self) -> Option<char> {
         self.iter.next_back()
@@ -873,7 +859,7 @@ impl<A: Array<Item = u8>> FromUtf8Error<A> {
     /// Returns the slice of `[u8]` bytes that were attempted to convert to a `SmallString`.
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
-        let ptr = &self.buf as *const _ as *const u8;
+        let ptr = (&raw const self.buf).cast::<u8>();
         unsafe { slice::from_raw_parts(ptr, A::size()) }
     }
 
@@ -885,7 +871,7 @@ impl<A: Array<Item = u8>> FromUtf8Error<A> {
 
     /// Returns the `Utf8Error` to get more details about the conversion failure.
     #[inline]
-    pub fn utf8_error(&self) -> Utf8Error {
+    pub const fn utf8_error(&self) -> Utf8Error {
         self.error
     }
 }
