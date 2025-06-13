@@ -21,8 +21,10 @@ std = ["serde/std"]
 union = ["smallvec/union"]
 
 [dependencies]
-serde = { version = "1.0", default-features = false, features = ["alloc"], optional = true }
-smallvec = { version = "1.1" }
+serde = { version = "1", default-features = false, features = [
+  "alloc",
+], optional = true }
+smallvec = { version = "1" }
 
 [dev-dependencies]
-bincode = "1.0"
+bincode = "2"
